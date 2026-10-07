@@ -1,0 +1,93 @@
+SASHA TRAVEL STORIES
+
+A personal travel journal with a private dashboard. Sasha writes stories, adds
+places, experiences and photos, and gives each story its own theme and reading
+style. Plain HTML, CSS and JavaScript: no build step and no frameworks.
+
+The words live in a Google Sheet, read and written by a Google Apps Script web
+app, the Sasha Blog Bridge. Photos live in Cloudinary. Setup: assets/setup.txt.
+
+PROJECT FOLDERS
+
+  index.html            home page, the only file at the top level
+  html/                 every other page
+    journal.html        all stories, by theme or place, as a grid or a timeline
+    story.html          one story: story.html?slug=...
+    places.html         places on a map, and one place: places.html?place=...
+    experiences.html    favourite meals, walks, treks and moments
+    about.html          about Sasha
+    search.html         search across stories, places and experiences
+    admin.html          the private dashboard
+  css/                  base.css (shared), site.css (pages), story.css (story
+                        page), admin.css (dashboard)
+  js/config.js          the bridge's web app address and the site's address
+  js/core/              shared code
+  js/site/              the public pages
+  js/admin/             the dashboard
+  apps-script/          Sasha Blog Bridge.gs and setupsheet.gs
+  assets/               favicon, start.bat (runs the site locally) and these notes
+
+THE DASHBOARD
+
+  Write         Overview: the numbers, recent edits and a way into every part of
+                the site
+  Collections   Journal, Places, Experiences
+  Site          Themes, Media library, Settings
+
+THEMES AND READING STYLE
+
+The site keeps its warm beige, white and pastel look everywhere. A theme only
+recolours the pages of the stories that use it: the background, links, quotes,
+tips, dividers and reading bar. Each theme starts from a look (Journal, Snow,
+Mountain, Forest, Coast, Desert, Heritage, Blossom, Dusk or Spice) and its two
+colours can be fine-tuned. A Hampta Pass story with a Snow theme turns softly
+blue and white, and so does the theme's page in the journal.
+
+Each story also has a reading style: text size (small, normal, large or extra
+large), font (modern, book or classic) and line spacing (compact, comfortable or
+airy). Single paragraphs can be made larger or smaller than the rest.
+
+PLACES ON THE MAP
+
+"Find on the map" looks a place up by its name, region and country with
+OpenStreetMap's free search (Nominatim) and fills in the latitude and
+longitude. The pin can then be dragged to the exact spot. Maps use Leaflet with
+OpenStreetMap tiles, so no key or account is needed.
+
+FOR DEVELOPERS
+
+Scripts share one global object, window.SASHA. js/core loads in this order:
+  util      SASHA.util: escaping, text, dates, colours and page links
+  icons     SASHA.icon("map-pin"): line icons from Lucide
+  schema    SASHA.schema: the content rules, the same as in the bridge
+  images    SASHA.img: resized photo links and upload preparation
+  content   SASHA.content: turns sheet data into page data, search, themes
+  api       SASHA.api: talks to the bridge
+  store     SASHA.store: the only part pages and the dashboard call
+Then js/site/layout.js (SASHA.site: header, footer, cards and page start-up) and
+the page's own script, or js/admin/ui.js (SASHA.admin) and the dashboard
+sections. js/site/map.js (SASHA.map) and lightbox.js (SASHA.lightbox) load when
+needed. Settings come from window.SASHA_CONFIG in js/config.js.
+
+Content
+  - IDs are a two-letter prefix and a code: st (journal), pl (places),
+    ex (experiences), th (themes), im (media).
+  - Stories, places and experiences are draft, published or deleted. Themes are
+    active, hidden or deleted. Media is active or deleted.
+  - A story is live once it is published and its Published At time has passed,
+    so stories can be scheduled.
+  - Story text is a JSON list of blocks: paragraph, heading, image, gallery,
+    quote, tip, list, divider and map. Paragraphs, lists, tips and quotes
+    understand **bold**, *italic* and [label](https://link).
+  - Each save sends the record's Updated At. If the record changed in the
+    meantime, the save is refused with the code CONFLICT.
+
+Bridge web app (replies are JSON: { ok: true, ... } or { ok: false, error, code, field })
+  GET  ?action=ping                   health check
+  GET  ?action=site                   public content: settings, themes, stories
+                                      (without blocks), places and experiences
+  GET  ?action=story&slug=...         one live story, with its blocks
+  POST { action: "login", password }  returns { token, expiresAt }
+  POST { action, token, ... }         bootstrap, get, save, remove, restore,
+                                      settings, folders, move, sign, status, export
+POST bodies are sent as text/plain, so browsers skip the CORS preflight.

@@ -1,0 +1,181 @@
+SASHA TRAVEL STORIES: SETUP GUIDE
+
+The blog keeps its words in your Google Sheet and its photos in Cloudinary.
+Two Apps Script files connect them:
+
+  apps-script/Sasha Blog Bridge.gs   reads and writes everything for the site and the dashboard
+  apps-script/setupsheet.gs          sets up the tabs once; you can delete it afterwards
+
+Your password and the Cloudinary secret live only in Apps Script, on Google's
+servers. Nothing secret is ever stored in the website's files.
+
+================================================================================
+
+STEP 1: OPEN THE SCRIPT EDITOR
+
+1. Open your Google Sheet.
+2. Click Extensions > Apps Script. A new tab opens.
+
+STEP 2: ADD THE TWO SCRIPT FILES
+
+1. In the Files list on the left, click the three dots next to Code.gs, choose
+   Rename and call it "Sasha Blog Bridge".
+2. Open it, select everything (Ctrl+A) and delete it. Then open
+   apps-script\Sasha Blog Bridge.gs from this project in Notepad, copy all of
+   it and paste it in.
+3. Click the + next to Files, choose Script and call it "setupsheet". Replace
+   what is in it with apps-script\setupsheet.gs in the same way.
+4. Press Ctrl+S to save.
+
+STEP 3: RUN setupSheets ONCE
+
+1. Open setupsheet.gs. In the menu at the top, next to Run and Debug, choose
+   setupSheets, then click Run.
+2. If Google asks for permission, click Review permissions and choose your
+   account. On "Google hasn't verified this app", click Advanced, then
+   "Go to ... (unsafe)", then Allow. It's your own script.
+3. When it finishes, the sheet has six tabs: Journal, Places, Experiences,
+   Themes, Media and Settings.
+
+Your rows are kept. The script renames the old tabs (Blogs becomes Journal,
+Categories becomes Themes, Images becomes Media), gives every tab Title Case
+headers, drops the SEO columns and deletes the Navigation tab, which the site
+no longer uses. Running it again is safe.
+
+STEP 4: SET THE DASHBOARD PASSWORD
+
+Skip this step if you can already sign in to the dashboard.
+
+1. In Apps Script, click Project Settings (the gear on the left).
+2. Under Script properties, click Add script property.
+3. Property: ADMIN_PASSWORD. Value: your password, at least 10 characters.
+4. Click Save script properties.
+
+On the first sign-in the password is swapped for a scrambled copy. To change it,
+add ADMIN_PASSWORD again with the new password; every device is then signed out.
+
+STEP 5: PHOTO UPLOADS WITH CLOUDINARY
+
+1. Sign in at https://cloudinary.com (the free plan is plenty).
+2. In the Cloudinary console, open Settings > API Keys and note your Cloud
+   name, API Key and API Secret.
+3. In Apps Script > Project Settings > Script properties, add three properties:
+     CLOUDINARY_CLOUD_NAME    your cloud name
+     CLOUDINARY_API_KEY       your API key
+     CLOUDINARY_API_SECRET    your API secret
+4. Click Save script properties.
+
+How an upload works:
+  1. The dashboard makes the photo smaller in your browser.
+  2. The bridge signs the upload with your secret. The secret never leaves Google.
+  3. The browser sends the photo straight to Cloudinary, into
+     Sasha Blog/<the folder chosen in the Media library>.
+  4. The photo's link and details are saved as a row in the Media tab.
+
+Folders: every photo lives inside one Cloudinary folder, "Sasha Blog". Create,
+rename and delete the folders inside it from the dashboard's Media library, and
+move photos between them. The bridge makes the same changes in Cloudinary, so
+both always match. Photo links never change, so stories never break.
+
+Moving and renaming in Cloudinary needs its "dynamic folders" mode, which all
+new Cloudinary accounts use. On an older account with fixed folders, uploads and
+the Media library work just the same; Cloudinary simply keeps each photo in the
+folder it was uploaded to.
+
+Without Cloudinary you can still add photos by pasting links that start with
+https://.
+
+STEP 6: DEPLOY A NEW VERSION
+
+Do this every time you change the script:
+
+1. Click Deploy > Manage deployments.
+2. Click the pencil (Edit) next to your web app.
+3. Under Version, choose New version, then click Deploy.
+
+The web app address (ending in /exec) stays the same. Only for a brand-new
+setup: Deploy > New deployment > Web app, Execute as: Me, Who has access: Anyone.
+
+STEP 7: CHECK js/config.js
+
+It already holds your addresses:
+
+  apiUrl    https://script.google.com/macros/s/AKfycbxZ017S.../exec
+  siteUrl   https://ssv-gym.github.io/BLOG/
+
+If you ever make a new deployment, paste its /exec address into apiUrl.
+
+STEP 8: PUT THE SITE ONLINE
+
+Upload all the project's files to your GitHub repository, keeping the folders
+exactly as they are, with index.html at the top level. Delete the old pages that
+used to sit next to index.html (admin.html, journal.html and the rest) and the
+data folder, so nobody lands on an old copy.
+
+  Website     https://ssv-gym.github.io/BLOG/
+  Dashboard   https://ssv-gym.github.io/BLOG/html/admin.html
+
+To work on your own computer, double-click assets\start.bat and open
+http://localhost:8000/.
+
+================================================================================
+
+THE SHEET
+
+Journal       ID, Slug, Title, Subtitle, Excerpt, Cover Image, Cover Alt,
+              Location, Place ID, Theme, Tags, Trip Start, Trip End, Text Size,
+              Font, Spacing, Featured, Status, Published At, Blocks, Created At,
+              Updated At
+Places        ID, Slug, Name, Region, Country, Summary, Description, Cover Image,
+              Cover Alt, Latitude, Longitude, Best Time, Visited On, Tags,
+              Featured, Status, Sort Order, Created At, Updated At
+Experiences   ID, Slug, Title, Kind, Place ID, Summary, Image, Image Alt, Date,
+              Rating, Duration, Cost, Story Slug, Link, Featured, Status,
+              Sort Order, Created At, Updated At
+Themes        ID, Slug, Name, Description, Look, Accent, Background, Sort Order,
+              Status, Created At, Updated At
+Media         ID, URL, Public ID, Folder, Alt, Caption, Credit, Width, Height,
+              Bytes, Source, Status, Created At, Updated At
+Settings      Key, Value
+
+ID and Slug do different jobs, so keep both:
+  ID     A permanent code such as st_lx9k2ab3cd. Other tabs point to it (the
+         Place ID column in Journal and Experiences), and the dashboard finds
+         rows with it. It never changes.
+  Slug   The readable end of a page's link, such as hampi in
+         html/places.html?place=hampi. The dashboard calls it "Link name". It
+         is made from the title, and you can change it without breaking
+         anything.
+
+Good to know:
+  - Write story text in the dashboard; the Blocks column stores it as JSON.
+  - Keep the tab names and row 1 as they are. Column order doesn't matter: the
+    bridge finds columns by their headers and adds any that are missing.
+  - Deleting in the dashboard moves an item to the Bin: its row stays, with
+    Status "deleted", and can be restored.
+  - Changes reach the site within about 5 minutes.
+  - Settings > Tools > Download a backup saves everything as one file. Google
+    Sheets also keeps its own history (File > Version history).
+  - To sign out every device, run signOutEverywhere in Apps Script.
+
+================================================================================
+
+IF SOMETHING GOES WRONG
+
+"Couldn't reach Google Apps Script"
+    Check that apiUrl in js/config.js ends in /exec, and that the deployment's
+    "Who has access" is Anyone.
+"The ... tab is missing"
+    Run setupSheets once (step 3).
+"No password has been set yet"
+    Do step 4.
+"That password isn't right" or "Too many wrong passwords"
+    Wait 15 minutes, or set a new password (step 4).
+"Photo uploads aren't set up yet"
+    Do step 5, or add photos by link.
+An upload fails with "Invalid Signature"
+    Copy the Cloudinary API secret again, with no spaces before or after it.
+The site still shows old content
+    Wait 5 minutes, and check that you deployed a new version (step 6).
+Anything else
+    In Apps Script, click Executions on the left to see the error.
